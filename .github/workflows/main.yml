@@ -1,0 +1,48 @@
+name: Build HTML to APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Create Cordova App
+        run: |
+          cordova create appcom.example.htmlapk "MyHTMLApp"
+          cd app
+          cordova platform add android@12.0.0
+          rm -rf www/*
+          cp -r ../* www/ || true
+          rm -rf www/app
+
+      - name: Build Android APK
+        run: |
+          cd app
+          cordova build android --verbose
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-unsigned
+          path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
